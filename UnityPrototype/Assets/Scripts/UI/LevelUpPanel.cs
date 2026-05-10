@@ -9,28 +9,30 @@ namespace Survivor2D.UI
 {
     public class LevelUpPanel : MonoBehaviour
     {
-        [SerializeField] private GameObject root; // The visual panel root
+        [SerializeField] private GameObject root;
         [SerializeField] private LevelSystem levelSystem;
         [SerializeField] private WeaponManager weaponManager;
         [SerializeField] private Button[] choiceButtons;
         [SerializeField] private TMP_Text titleText;
 
+        private CanvasGroup rootCanvasGroup;
+
         private void Awake()
         {
-            // Subscribe to the event. Static events work even if the object is inactive.
             GameEvents.OnLevelUpChoicesRequested += Show;
-            
-            // Hide the panel at start
-            if (root != null) 
+
+            if (root == null)
             {
-                root.SetActive(false);
+                root = gameObject;
             }
-            else
+
+            rootCanvasGroup = root.GetComponent<CanvasGroup>();
+            if (rootCanvasGroup == null)
             {
-                // If root is null, use this object as the root but be careful not to disable the script
-                // if we need it to run Update (which we don't here).
-                gameObject.SetActive(false);
+                rootCanvasGroup = root.AddComponent<CanvasGroup>();
             }
+
+            SetVisible(false);
         }
 
         private void OnDestroy()
@@ -38,39 +40,43 @@ namespace Survivor2D.UI
             GameEvents.OnLevelUpChoicesRequested -= Show;
         }
 
-        public void HideImmediate() 
+        public void HideImmediate()
         {
-            if (root != null) root.SetActive(false);
-            else gameObject.SetActive(false);
+            SetVisible(false);
             Time.timeScale = 1f;
         }
 
-        private void Show() 
+        private void Show()
         {
-            Debug.Log("[LevelUpPanel] Show() triggered");
-            
-            // Re-activate if it was inactive
-            if (root != null) root.SetActive(true);
-            else gameObject.SetActive(true);
-
+            SetVisible(true);
             UpdateButtons();
+        }
+
+        private void SetVisible(bool visible)
+        {
+            if (rootCanvasGroup == null) return;
+
+            rootCanvasGroup.alpha = visible ? 1f : 0f;
+            rootCanvasGroup.interactable = visible;
+            rootCanvasGroup.blocksRaycasts = visible;
         }
 
         private void UpdateButtons()
         {
-            if (levelSystem == null) return;
+            if (levelSystem == null || choiceButtons == null) return;
             var choices = levelSystem.PendingChoices;
-            Debug.Log($"[LevelUpPanel] Updating buttons with {choices.Count} choices");
 
             for (int i = 0; i < choiceButtons.Length; i++)
             {
+                if (choiceButtons[i] == null) continue;
+
                 if (i < choices.Count)
                 {
                     choiceButtons[i].gameObject.SetActive(true);
                     var weaponType = choices[i];
                     var owned = weaponManager != null ? weaponManager.GetOwnedWeapons().Find(w => w.Type == weaponType) : null;
                     int currentLevel = owned != null ? owned.Level : 0;
-                    
+
                     var txt = choiceButtons[i].GetComponentInChildren<TMP_Text>();
                     if (txt != null)
                     {
@@ -88,6 +94,7 @@ namespace Survivor2D.UI
 
         public void SelectChoice(int index)
         {
+            if (levelSystem == null) return;
             levelSystem.ApplyWeaponChoice(index);
             HideImmediate();
         }
@@ -97,5 +104,3 @@ namespace Survivor2D.UI
         public void SelectChoice2() => SelectChoice(2);
     }
 }
-
-
