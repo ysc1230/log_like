@@ -13,7 +13,6 @@ namespace Survivor2D.UI
         [SerializeField] private LevelSystem levelSystem;
         [SerializeField] private WeaponManager weaponManager;
         [SerializeField] private Button[] choiceButtons;
-        [SerializeField] private TMP_Text titleText;
 
         private CanvasGroup rootCanvasGroup;
 
@@ -58,7 +57,6 @@ namespace Survivor2D.UI
         private void SetVisible(bool visible)
         {
             if (rootCanvasGroup == null) return;
-
             rootCanvasGroup.alpha = visible ? 1f : 0f;
             rootCanvasGroup.interactable = visible;
             rootCanvasGroup.blocksRaycasts = visible;
@@ -67,31 +65,30 @@ namespace Survivor2D.UI
         private void UpdateButtons()
         {
             if (levelSystem == null || choiceButtons == null) return;
-            var choices = levelSystem.PendingChoices;
 
+            var choices = levelSystem.PendingChoices;
             for (int i = 0; i < choiceButtons.Length; i++)
             {
-                if (choiceButtons[i] == null) continue;
+                var button = choiceButtons[i];
+                if (button == null) continue;
 
-                if (i < choices.Count)
+                if (i >= choices.Count)
                 {
-                    choiceButtons[i].gameObject.SetActive(true);
-                    var weaponType = choices[i];
-                    var owned = weaponManager != null ? weaponManager.GetOwnedWeapons().Find(w => w.Type == weaponType) : null;
-                    int currentLevel = owned != null ? owned.Level : 0;
+                    button.gameObject.SetActive(false);
+                    continue;
+                }
 
-                    var txt = choiceButtons[i].GetComponentInChildren<TMP_Text>();
-                    if (txt != null)
-                    {
-                        string levelStr = currentLevel == 0 ? "New" : $"Lv {currentLevel + 1}";
-                        txt.text = $"{WeaponStatus.GetName(weaponType)} {levelStr}\n" +
-                                   $"<size=24>{WeaponStatus.GetDescription(weaponType, currentLevel == 0)}</size>";
-                    }
-                }
-                else
-                {
-                    choiceButtons[i].gameObject.SetActive(false);
-                }
+                button.gameObject.SetActive(true);
+
+                var weaponType = choices[i];
+                var owned = weaponManager != null ? weaponManager.GetOwnedWeapons().Find(w => w.Type == weaponType) : null;
+                int currentLevel = owned != null ? owned.Level : 0;
+
+                var txt = button.GetComponentInChildren<TMP_Text>();
+                if (txt == null) continue;
+
+                string levelStr = currentLevel == 0 ? "New" : $"Lv {currentLevel + 1}";
+                txt.text = $"{WeaponStatus.GetName(weaponType)} {levelStr}\n<size=24>{WeaponStatus.GetDescription(weaponType, currentLevel == 0)}</size>";
             }
         }
 
