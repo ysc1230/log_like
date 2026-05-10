@@ -17,41 +17,31 @@ namespace Survivor2D.UI
 
         private void Awake()
         {
-            // Subscribe to the event. Static events work even if the object is inactive.
-            GameEvents.OnLevelUpChoicesRequested += Show;
-            
-            // Hide the panel at start
-            if (root != null) 
+            if (root != null)
             {
                 root.SetActive(false);
             }
-            else
-            {
-                // If root is null, use this object as the root but be careful not to disable the script
-                // if we need it to run Update (which we don't here).
-                gameObject.SetActive(false);
-            }
         }
 
-        private void OnDestroy()
+        private void OnEnable()
+        {
+            GameEvents.OnLevelUpChoicesRequested += Show;
+        }
+
+        private void OnDisable()
         {
             GameEvents.OnLevelUpChoicesRequested -= Show;
         }
 
-        public void HideImmediate() 
+        public void HideImmediate()
         {
             if (root != null) root.SetActive(false);
-            else gameObject.SetActive(false);
             Time.timeScale = 1f;
         }
 
-        private void Show() 
+        private void Show()
         {
-            Debug.Log("[LevelUpPanel] Show() triggered");
-            
-            // Re-activate if it was inactive
             if (root != null) root.SetActive(true);
-            else gameObject.SetActive(true);
 
             UpdateButtons();
         }
@@ -60,7 +50,6 @@ namespace Survivor2D.UI
         {
             if (levelSystem == null) return;
             var choices = levelSystem.PendingChoices;
-            Debug.Log($"[LevelUpPanel] Updating buttons with {choices.Count} choices");
 
             for (int i = 0; i < choiceButtons.Length; i++)
             {
@@ -70,7 +59,7 @@ namespace Survivor2D.UI
                     var weaponType = choices[i];
                     var owned = weaponManager != null ? weaponManager.GetOwnedWeapons().Find(w => w.Type == weaponType) : null;
                     int currentLevel = owned != null ? owned.Level : 0;
-                    
+
                     var txt = choiceButtons[i].GetComponentInChildren<TMP_Text>();
                     if (txt != null)
                     {
@@ -97,5 +86,3 @@ namespace Survivor2D.UI
         public void SelectChoice2() => SelectChoice(2);
     }
 }
-
-
