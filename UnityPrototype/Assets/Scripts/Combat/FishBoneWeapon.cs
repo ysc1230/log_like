@@ -9,7 +9,7 @@ namespace Survivor2D.Combat
         private EnemyRegistry registry;
         private Transform firePoint;
 
-        private float baseCooldown = 1.2f;
+        private float baseCooldown = 2.4f;
         private int baseDamage = 10;
 
         public void Initialize(ProjectilePool p, EnemyRegistry r, Transform fp)
@@ -37,8 +37,11 @@ namespace Survivor2D.Combat
                 var dir = (target.transform.position - spawnPos).normalized;
                 var projectile = pool.Get(spawnPos);
                 projectile.Initialize(dir, damage, piercing);
+
+                // Add small scale up or visual feedback if possible? 
+                // Since we don't have a separate muzzle flash prefab here, we just ensure it spawns at firePoint.
             }
-        }
+            }
 
         protected override void ResetCooldown()
         {

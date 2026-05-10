@@ -46,7 +46,7 @@ public static class MainSceneAutoBuilder
         RenderSettings.ambientLight = Color.white;
 
         EnsureDirectionalLight();
-        BuildBackground();
+        BuildEnvironment();
         Directory.CreateDirectory(PrefabFolder);
 
         // 2. Core Systems
@@ -308,15 +308,11 @@ public static class MainSceneAutoBuilder
         CreateTmpText("WeaponListText", hudGo.transform, "", new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, -120)).fontSize = 20;
 
         // HP/EXP Bars
-        var hpBar = CreateSlider("HPBar", canvasGo.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -300));
-        hpBar.GetComponent<RectTransform>().sizeDelta = new Vector2(250, 16);
-        hpBar.fillRect.GetComponent<Image>().color = Color.red;
-        if (hpBar.GetComponent<Image>() != null) hpBar.GetComponent<Image>().enabled = false;
+        var hpBar = CreateSlider("HPBar", canvasGo.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -300), new Vector2(250, 16), Color.red);
+        if (hpBar.GetComponent<UnityEngine.UI.Image>() != null) hpBar.GetComponent<UnityEngine.UI.Image>().enabled = false;
 
-        var expBar = CreateSlider("EXPBar", canvasGo.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 20));
-        expBar.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 20); 
-        expBar.fillRect.GetComponent<Image>().color = new Color(0.2f, 0.6f, 1f); 
-        if (expBar.GetComponent<Image>() != null) expBar.GetComponent<Image>().enabled = false;
+        var expBar = CreateSlider("EXPBar", canvasGo.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 20), new Vector2(0, 20), new Color(0.2f, 0.6f, 1f));
+        if (expBar.GetComponent<UnityEngine.UI.Image>() != null) expBar.GetComponent<UnityEngine.UI.Image>().enabled = false;
 
         // Time
         var timeText = CreateTmpText("TimeText", canvasGo.transform, "00:00", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -60), TextAlignmentOptions.Center);
@@ -443,18 +439,19 @@ public static class MainSceneAutoBuilder
         }
     }
 
-    private static Slider CreateSlider(string name, Transform parent, Vector2 anchoredPosition, Vector2 size, Color fillColor)
+    private static Slider CreateSlider(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPos, Vector2 size, Color fillColor)
     {
         var go = GetOrCreate(name, parent);
         var rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = minAnchor; rect.anchorMax = maxAnchor;
+        rect.anchorMin = anchorMin; rect.anchorMax = anchorMax;
         rect.anchoredPosition = anchoredPos;
+        rect.sizeDelta = size;
         var slider = GetOrAdd<Slider>(go);
         slider.interactable = false;
         slider.transition = Selectable.Transition.None;
         var fillArea = GetOrCreate("Fill Area", go.transform);
-        var fillRect = fillArea.GetComponent<RectTransform>();
-        fillRect.anchorMin = Vector2.zero; fillRect.anchorMax = Vector2.one; fillRect.offsetMin = Vector2.zero; fillRect.offsetMax = Vector2.zero;
+        var fillAreaRect = fillArea.GetComponent<RectTransform>();
+        fillAreaRect.anchorMin = Vector2.zero; fillAreaRect.anchorMax = Vector2.one; fillAreaRect.offsetMin = Vector2.zero; fillAreaRect.offsetMax = Vector2.zero;
         var fill = GetOrCreate("Fill", fillArea.transform);
         var fillRect = fill.GetComponent<RectTransform>();
         fillRect.anchorMin = Vector2.zero;
@@ -462,7 +459,7 @@ public static class MainSceneAutoBuilder
         fillRect.offsetMin = Vector2.zero;
         fillRect.offsetMax = Vector2.zero;
 
-        var fillImage = GetOrAdd<Image>(fill);
+        var fillImage = GetOrAdd<UnityEngine.UI.Image>(fill);
         fillImage.color = fillColor;
 
         slider.fillRect = fillRect;
@@ -483,7 +480,7 @@ public static class MainSceneAutoBuilder
         var tmp = GetOrAdd<TextMeshProUGUI>(go);
         tmp.text = text; tmp.fontSize = 28; tmp.alignment = align; tmp.color = Color.white;
         var rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = minAnchor; rect.anchorMax = maxAnchor;
+        rect.anchorMin = anchorMin; rect.anchorMax = anchorMax;
         rect.sizeDelta = new Vector2(600f, 100f);
         rect.anchoredPosition = anchoredPos;
         return tmp;

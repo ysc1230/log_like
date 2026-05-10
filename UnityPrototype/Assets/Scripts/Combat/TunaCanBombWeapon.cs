@@ -9,7 +9,7 @@ namespace Survivor2D.Combat
         private GameObject explosionVfxPrefab;
 
         private int baseDamage = 30;
-        private float baseCooldown = 3.5f;
+        private float baseCooldown = 7.0f;
         private float spawnRadius = 3f;
         private float bombLifetime = 20f;
 

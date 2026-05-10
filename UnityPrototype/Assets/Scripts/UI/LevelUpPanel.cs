@@ -77,7 +77,12 @@ namespace Survivor2D.UI
 
         public void SelectChoice(int index)
         {
-            levelSystem.ApplyWeaponChoice(index);
+            Debug.Log($"[LevelUpPanel] Button clicked: {index}");
+            if (levelSystem != null)
+            {
+                levelSystem.ApplyWeaponChoice(index);
+                Debug.Log($"[LevelUpPanel] Applied weapon choice: {index}");
+            }
             HideImmediate();
         }
 

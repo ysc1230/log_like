@@ -31,17 +31,23 @@ namespace Survivor2D.Combat
 
         private void Explode(EnemyController target)
         {
+            float explosionRadius = 2.5f;
             if (explosionVfxPrefab != null)
             {
                 var vfx = Instantiate(explosionVfxPrefab, transform.position, Quaternion.identity);
-                vfx.transform.localScale = Vector3.one * 0.05f;
+                vfx.transform.localScale = Vector3.one * 2.5f; // Increased from 0.05f
                 Debug.Log($"Tuna Can Bomb Exploded at {transform.position}, Scale: {vfx.transform.localScale}");
                 Destroy(vfx, 0.5f);
             }
 
-            if (target != null)
+            // Area of Effect damage
+            var colliders = Physics2D.OverlapCircleAll(transform.position, explosionRadius);
+            foreach (var col in colliders)
             {
-                target.ApplyDamage(damage);
+                if (col.TryGetComponent<EnemyController>(out var enemy))
+                {
+                    enemy.ApplyDamage(damage);
+                }
             }
             
             Destroy(gameObject);

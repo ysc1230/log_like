@@ -38,7 +38,11 @@ namespace Survivor2D.Combat
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            if (!other.TryGetComponent<Survivor2D.Enemy.EnemyController>(out var enemy)) return;
+            var enemy = other.GetComponent<Survivor2D.Enemy.EnemyController>();
+            if (enemy == null) enemy = other.GetComponentInParent<Survivor2D.Enemy.EnemyController>();
+            
+            if (enemy == null) return;
+            
             enemy.ApplyDamage(damage);
             
             if (isPiercing && remainingPierces > 0)

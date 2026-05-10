@@ -23,6 +23,8 @@ namespace Project.UI
 
         private void Refresh()
         {
+            if (Screen.width <= 0 || Screen.height <= 0) return;
+
             Rect safeArea = Screen.safeArea;
 
             if (safeArea != _lastSafeArea || 

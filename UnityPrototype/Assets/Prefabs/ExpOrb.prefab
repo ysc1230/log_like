@@ -141,4 +141,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dcebf9572c78b8c4e957f5eb28b64a1c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Survivor2D.Progression.ExpOrb
-  pickupRadius: 0.6
+  magnetRange: 5
+  magnetSpeed: 6
+  pickupRadius: 0.5

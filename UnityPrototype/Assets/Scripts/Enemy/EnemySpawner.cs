@@ -31,12 +31,14 @@ namespace Survivor2D.Enemy
             if (enemyPrefab == null || player == null || mainCamera == null) return;
 
             var viewportPoint = RandomSpawnEdgePoint();
-            var worldPos = mainCamera.ViewportToWorldPoint(new Vector3(viewportPoint.x, viewportPoint.y, 0f));
+            float distance = Mathf.Abs(mainCamera.transform.position.z);
+            var worldPos = mainCamera.ViewportToWorldPoint(new Vector3(viewportPoint.x, viewportPoint.y, distance));
             worldPos.z = 0f;
 
             var enemy = Instantiate(enemyPrefab, worldPos, Quaternion.identity);
             enemy.Initialize(player, 1f + elapsed * 0.01f, enemyRegistry, levelSystem);
-        }
+            // Debug.Log($"[EnemySpawner] Spawned {enemy.name} at {worldPos}");
+            }
 
         private Vector2 RandomSpawnEdgePoint()
         {
