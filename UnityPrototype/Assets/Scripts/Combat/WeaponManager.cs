@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Survivor2D.Core;
 using Survivor2D.Enemy;
+using Survivor2D.Player;
 
 namespace Survivor2D.Combat
 {
@@ -63,14 +64,51 @@ namespace Survivor2D.Combat
         [SerializeField] private ProjectilePool projectilePool;
         [SerializeField] private EnemyRegistry enemyRegistry;
         [SerializeField] private Transform firePoint;
+        [SerializeField] private PlayerStats playerStats;
 
         [Header("Prefabs")]
         [SerializeField] private GameObject catClawVfxPrefab;
         [SerializeField] private GameObject tunaCanBombPrefab;
         [SerializeField] private GameObject explosionVfxPrefab;
 
+
         private Dictionary<WeaponType, WeaponStatus> ownedWeapons = new Dictionary<WeaponType, WeaponStatus>();
         private Dictionary<WeaponType, WeaponBase> activeWeapons = new Dictionary<WeaponType, WeaponBase>();
+
+        private float baseAttackCooldown = 1f;
+        private float currentAttackRateMultiplier = 1f;
+
+        private void Awake()
+        {
+            if (playerStats != null)
+            {
+                baseAttackCooldown = Mathf.Max(0.1f, playerStats.AttackCooldown);
+            }
+        }
+
+        private void OnEnable()
+        {
+            GameEvents.OnStatsChanged += HandleStatsChanged;
+        }
+
+        private void OnDisable()
+        {
+            GameEvents.OnStatsChanged -= HandleStatsChanged;
+        }
+
+        private void HandleStatsChanged(int attackDamage, float attackCooldown, float moveSpeed)
+        {
+            if (attackCooldown <= 0f) return;
+
+            currentAttackRateMultiplier = Mathf.Max(0.1f, baseAttackCooldown / attackCooldown);
+            foreach (var weapon in activeWeapons.Values)
+            {
+                if (weapon != null)
+                {
+                    weapon.SetAttackRateMultiplier(currentAttackRateMultiplier);
+                }
+            }
+        }
 
         public List<WeaponStatus> GetOwnedWeapons()
         {
@@ -126,6 +164,7 @@ namespace Survivor2D.Combat
             if (weapon != null)
             {
                 weapon.SetLevel(status.Level);
+                weapon.SetAttackRateMultiplier(currentAttackRateMultiplier);
                 activeWeapons[status.Type] = weapon;
             }
         }

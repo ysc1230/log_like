@@ -6,6 +6,7 @@ namespace Survivor2D.Combat
     {
         protected int level = 0;
         protected float cooldownTimer;
+        private float attackRateMultiplier = 1f;
 
         public virtual void SetLevel(int newLevel)
         {
@@ -19,11 +20,16 @@ namespace Survivor2D.Combat
 
         protected abstract void Attack();
 
+        public void SetAttackRateMultiplier(float multiplier)
+        {
+            attackRateMultiplier = Mathf.Max(0.1f, multiplier);
+        }
+
         protected virtual void Update()
         {
             if (level <= 0) return;
 
-            cooldownTimer -= Time.deltaTime;
+            cooldownTimer -= Time.deltaTime * attackRateMultiplier;
             if (cooldownTimer <= 0)
             {
                 Attack();

@@ -31,10 +31,11 @@
 4. `WeaponManager.AddOrUpgradeWeapon()`
    - 강화 시 `SetLevel(status.Level)` 호출로 이후 `ResetCooldown()`에서 레벨 반영 주기로 순환.
 
-### 간접 영향(없음/분리됨)
-- `PlayerStats.AttackCooldown`은 `AutoAttacker`(기본 발사체 자동공격) 전용이며, `WeaponBase` 계열 3종 무기 주기에는 연결되지 않는다.
-- `AddAttackRateMultiplier()`를 올려도 FishBone/CatClaw/TunaCanBomb의 주기는 변하지 않는다.
+### 간접 영향(현재 구현 기준 연결됨)
+- `PlayerStats.AttackCooldown` 변경은 `GameEvents.OnStatsChanged`를 통해 `WeaponManager`로 전달된다.
+- `WeaponManager`는 `baseAttackCooldown / attackCooldown` 비율로 무기 공속 배율을 계산해 활성 무기 전체에 적용한다.
+- 따라서 `AddAttackRateMultiplier()`로 공격속도가 빨라지면 FishBone/CatClaw/TunaCanBomb의 실제 주기도 함께 빨라진다.
 
 ## 3) 정리
-- 현재 구조에서 무기 3종의 공격 주기는 **무기 내부 상수 + 무기 레벨(4+) + 타임스케일(일시정지)** 에 의해 결정된다.
-- 플레이어 스탯의 공격속도 계열 값은 별도 시스템(`AutoAttacker`)에만 적용된다.
+- 현재 구조에서 무기 3종의 공격 주기는 **무기 내부 상수 + 무기 레벨(4+) + 타임스케일(일시정지) + 플레이어 공격속도 배율**로 결정된다.
+- 플레이어 공격속도 변경은 `WeaponManager`가 활성 무기 전체에 공통 배율로 반영한다.
