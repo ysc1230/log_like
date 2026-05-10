@@ -1,3 +1,4 @@
+// File: UnityPrototype/Assets/Editor/MainSceneAutoBuilder.cs
 #if UNITY_EDITOR
 using System.IO;
 using Survivor2D.Combat;
@@ -45,6 +46,7 @@ public static class MainSceneAutoBuilder
         RenderSettings.ambientLight = Color.white;
 
         EnsureDirectionalLight();
+        BuildBackground();
         Directory.CreateDirectory(PrefabFolder);
 
         // 2. Core Systems
@@ -220,13 +222,28 @@ public static class MainSceneAutoBuilder
         else go.AddComponent<CircleCollider2D>();
     }
 
+    private static void SetupCamera(Camera mainCamera)
+    {
+        mainCamera.orthographic = true;
+        mainCamera.orthographicSize = 10f;
+        mainCamera.clearFlags = CameraClearFlags.SolidColor;
+        mainCamera.backgroundColor = new Color(0.08f, 0.1f, 0.14f, 1f);
+        mainCamera.transform.position = new Vector3(0f, 0f, -10f);
+    }
+
     private static void EnsureDirectionalLight()
     {
         var light = Object.FindObjectOfType<Light>();
-        if (light != null) return;
+        if (light != null)
+        {
+            light.enabled = false;
+            return;
+        }
+
         var go = new GameObject("Directional Light");
         light = go.AddComponent<Light>();
         light.type = LightType.Directional;
+        light.enabled = false;
     }
 
     private static GameObject BuildPlayer()
@@ -349,9 +366,23 @@ public static class MainSceneAutoBuilder
         var rb = go.AddComponent<Rigidbody2D>(); rb.gravityScale = 0f; rb.freezeRotation = true;
         go.AddComponent<CircleCollider2D>();
         go.AddComponent<EnemyController>();
+
         var prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
         Object.DestroyImmediate(go);
         return prefab;
+    }
+
+    private static void UpdateEnemyVisual(GameObject prefab)
+    {
+        var sr = prefab.GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            sr.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+            sr.color = new Color(1f, 0.25f, 0.25f, 1f);
+            sr.sortingOrder = 9;
+        }
+
+        prefab.transform.localScale = new Vector3(0.38f, 0.38f, 1f);
     }
 
     private static GameObject BuildProjectilePrefab()
@@ -365,9 +396,23 @@ public static class MainSceneAutoBuilder
         var collider = go.AddComponent<CircleCollider2D>();
         collider.isTrigger = true;
         go.AddComponent<Projectile>();
+
         var prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
         Object.DestroyImmediate(go);
         return prefab;
+    }
+
+    private static void UpdateProjectileVisual(GameObject prefab)
+    {
+        var sr = prefab.GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            sr.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+            sr.color = new Color(1f, 0.9f, 0.2f, 1f);
+            sr.sortingOrder = 12;
+        }
+
+        prefab.transform.localScale = new Vector3(0.16f, 0.16f, 1f);
     }
 
     private static GameObject BuildExpOrbPrefab()
@@ -382,6 +427,7 @@ public static class MainSceneAutoBuilder
         var collider = go.AddComponent<CircleCollider2D>();
         collider.isTrigger = true;
         go.AddComponent<ExpOrb>();
+
         var prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
         Object.DestroyImmediate(go);
         return prefab;
@@ -397,7 +443,7 @@ public static class MainSceneAutoBuilder
         }
     }
 
-    private static Slider CreateSlider(string name, Transform parent, Vector2 minAnchor, Vector2 maxAnchor, Vector2 anchoredPos)
+    private static Slider CreateSlider(string name, Transform parent, Vector2 anchoredPosition, Vector2 size, Color fillColor)
     {
         var go = GetOrCreate(name, parent);
         var rect = go.GetComponent<RectTransform>();
@@ -410,14 +456,28 @@ public static class MainSceneAutoBuilder
         var fillRect = fillArea.GetComponent<RectTransform>();
         fillRect.anchorMin = Vector2.zero; fillRect.anchorMax = Vector2.one; fillRect.offsetMin = Vector2.zero; fillRect.offsetMax = Vector2.zero;
         var fill = GetOrCreate("Fill", fillArea.transform);
+        var fillRect = fill.GetComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = Vector2.one;
+        fillRect.offsetMin = Vector2.zero;
+        fillRect.offsetMax = Vector2.zero;
+
         var fillImage = GetOrAdd<Image>(fill);
-        fillImage.color = Color.green;
-        slider.fillRect = fill.GetComponent<RectTransform>();
+        fillImage.color = fillColor;
+
+        slider.fillRect = fillRect;
         slider.handleRect = null;
         return slider;
     }
 
-    private static TMP_Text CreateTmpText(string name, Transform parent, string text, Vector2 minAnchor, Vector2 maxAnchor, Vector2 anchoredPos, TextAlignmentOptions align = TextAlignmentOptions.TopLeft)
+    private static TMP_Text CreateTmpText(
+        string name,
+        Transform parent,
+        string text,
+        Vector2 anchorMin,
+        Vector2 anchorMax,
+        Vector2 anchoredPos,
+        TextAlignmentOptions align = TextAlignmentOptions.TopLeft)
     {
         var go = GetOrCreate(name, parent);
         var tmp = GetOrAdd<TextMeshProUGUI>(go);
@@ -427,6 +487,22 @@ public static class MainSceneAutoBuilder
         rect.sizeDelta = new Vector2(600f, 100f);
         rect.anchoredPosition = anchoredPos;
         return tmp;
+    }
+
+    private static TMP_Text CreateLabel(string name, Transform parent, string text, Vector2 anchoredPos)
+    {
+        var label = CreateTmpText(name, parent, text, new Vector2(0f, 1f), new Vector2(0f, 1f), anchoredPos);
+        label.fontSize = 20;
+        label.color = new Color(0.85f, 0.9f, 1f, 0.95f);
+        return label;
+    }
+
+    private static TMP_Text CreateStatText(string name, Transform parent, string text, Vector2 anchoredPos)
+    {
+        var stat = CreateTmpText(name, parent, text, new Vector2(0f, 1f), new Vector2(0f, 1f), anchoredPos);
+        stat.fontSize = 18;
+        stat.color = new Color(0.95f, 0.97f, 1f, 0.95f);
+        return stat;
     }
 
     private static Button CreateButton(string name, Transform parent, string label, Vector2 anchoredPos)
@@ -446,10 +522,19 @@ public static class MainSceneAutoBuilder
         return btn;
     }
 
+    private static void StretchFullScreen(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+    }
+
     private static GameObject GetOrCreate(string name, Transform parent = null)
     {
         Transform found = parent == null ? GameObject.Find(name)?.transform : parent.Find(name);
         if (found != null) return found.gameObject;
+
         var go = new GameObject(name);
         if (parent != null) go.transform.SetParent(parent, false);
         if (parent != null || name == "Canvas") go.AddComponent<RectTransform>();
@@ -471,6 +556,29 @@ public static class MainSceneAutoBuilder
         if (prop == null) return;
         prop.objectReferenceValue = value;
         so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    private static GameObject RecreateChild(string name, Transform parent)
+    {
+        var existing = parent.Find(name);
+        if (existing != null)
+        {
+            Object.DestroyImmediate(existing.gameObject);
+        }
+
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.AddComponent<RectTransform>();
+        return go;
+    }
+
+    private static void RemoveLegacyUi(Transform root, string childName)
+    {
+        var legacy = root.Find(childName);
+        if (legacy != null)
+        {
+            Object.DestroyImmediate(legacy.gameObject);
+        }
     }
 }
 #endif
