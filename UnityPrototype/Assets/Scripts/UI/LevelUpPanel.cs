@@ -19,8 +19,6 @@ namespace Survivor2D.UI
 
         private void Awake()
         {
-            GameEvents.OnLevelUpChoicesRequested += Show;
-
             if (root == null)
             {
                 root = gameObject;
@@ -35,7 +33,12 @@ namespace Survivor2D.UI
             SetVisible(false);
         }
 
-        private void OnDestroy()
+        private void OnEnable()
+        {
+            GameEvents.OnLevelUpChoicesRequested += Show;
+        }
+
+        private void OnDisable()
         {
             GameEvents.OnLevelUpChoicesRequested -= Show;
         }
