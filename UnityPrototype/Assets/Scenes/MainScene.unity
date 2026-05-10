@@ -2244,7 +2244,7 @@ MonoBehaviour:
   mainCamera: {fileID: 242013570}
   enemyRegistry: {fileID: 659453718}
   levelSystem: {fileID: 659453717}
-  startSpawnInterval: 2
+  startSpawnInterval: 0.5
   minSpawnInterval: 0.5
   intervalReducePerSecond: 0.01
 --- !u!114 &659453721
@@ -2298,7 +2298,7 @@ GameObject:
   - component: {fileID: 660311658}
   m_Layer: 8
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2318,7 +2318,7 @@ MonoBehaviour:
   maxHealth: 100
   moveSpeed: 4
   attackDamage: 10
-  attackCooldown: 0.8
+  attackCooldown: 1.6
   iFrameDuration: 0.2
 --- !u!114 &660311648
 MonoBehaviour:
