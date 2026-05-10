@@ -1,0 +1,28 @@
+{
+    "asset": "cc0e786d3c698cd4cb8cffd0354b2861",
+    "fileName": "019e0d86-d748-7dde-bc2d-9b4bc359c705.png",
+    "prompt": "2D pixel art sprite of a cute brave cat hero character, small orange tabby cat with big ears, visible tail, and a tiny blue cape. Determined heroic expression, compact body shape. Top-down 3/4 gameplay view for a mobile survival roguelike. 32x32 pixel art style aesthetic, clean readable silhouette, limited color palette, clear dark outline, high contrast, simple shape. Single full-body character, centered, transparent background, game-ready Unity sprite. No background, no artifacts. No text, no watermark.",
+    "negativePrompt": "",
+    "model": "gemini-3.1-flash",
+    "modelName": "Gemini 3.1 Nano Banana 2",
+    "customSeed": -1,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation",
+    "pixelateTargetSize": 0,
+    "pixelateKeepImageSize": false,
+    "pixelatePixelBlockSize": 0,
+    "pixelatePixelGridSize": 0,
+    "pixelateMode": 0,
+    "pixelateOutlineThickness": 0,
+    "doodles": {
+        "m_Items": []
+    },
+    "upscaleFactor": 0,
+    "dimensions": {
+        "width": 1024,
+        "height": 1024
+    },
+    "spriteSheet": false,
+    "duration": 0.0
+}

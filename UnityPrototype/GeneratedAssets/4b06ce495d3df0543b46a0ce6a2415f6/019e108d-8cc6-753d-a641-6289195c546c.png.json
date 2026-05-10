@@ -1,0 +1,38 @@
+{
+    "asset": "4b06ce495d3df0543b46a0ce6a2415f6",
+    "fileName": "019e108d-8cc6-753d-a641-6289195c546c.png",
+    "prompt": "A 2D top-down game asset sprite of a small cartoon explosion. Bright orange and yellow colors. Circular or star-like puff of smoke and fire. Clean edges, matching the provided cat concept art style. White background.",
+    "negativePrompt": "",
+    "model": "gemini-3.1-flash",
+    "modelName": "Gemini 3.1 Nano Banana 2",
+    "customSeed": -1,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation",
+    "pixelateTargetSize": 0,
+    "pixelateKeepImageSize": false,
+    "pixelatePixelBlockSize": 0,
+    "pixelatePixelGridSize": 0,
+    "pixelateMode": 0,
+    "pixelateOutlineThickness": 0,
+    "doodles": {
+        "m_Items": [
+            {
+                "doodleReferenceType": 7,
+                "doodle": [],
+                "label": "Image",
+                "strength": 0.25,
+                "invertStrength": false,
+                "assetReferenceGuid": "cc0e786d3c698cd4cb8cffd0354b2861",
+                "unlabeledIndex": -1
+            }
+        ]
+    },
+    "upscaleFactor": 0,
+    "dimensions": {
+        "width": 1024,
+        "height": 1024
+    },
+    "spriteSheet": false,
+    "duration": 0.0
+}

@@ -5,11 +5,20 @@ namespace Survivor2D.Input
     public class TouchJoystickInput : MonoBehaviour
     {
         [SerializeField] private RectTransform joystickArea;
+        [SerializeField] private RectTransform handle;
         [SerializeField] private float deadZone = 0.1f;
+        [SerializeField] private float handleRange = 100f;
 
         public Vector2 MoveVector { get; private set; }
 
         private int activeFingerId = -1;
+        private Vector2 _initialPosition;
+
+        private void Awake()
+        {
+            if (joystickArea != null)
+                _initialPosition = joystickArea.anchoredPosition;
+        }
 
         private void Update()
         {
@@ -18,6 +27,7 @@ namespace Survivor2D.Input
             var y = UnityEngine.Input.GetAxisRaw("Vertical");
             var editorInput = new Vector2(x, y);
             MoveVector = editorInput.sqrMagnitude < deadZone * deadZone ? Vector2.zero : editorInput.normalized;
+            UpdateVisuals(MoveVector);
 #else
             HandleTouchInput();
 #endif
@@ -27,8 +37,7 @@ namespace Survivor2D.Input
         {
             if (UnityEngine.Input.touchCount == 0)
             {
-                MoveVector = Vector2.zero;
-                activeFingerId = -1;
+                ResetJoystick();
                 return;
             }
 
@@ -47,7 +56,7 @@ namespace Survivor2D.Input
 
             if (activeFingerId == -1)
             {
-                MoveVector = Vector2.zero;
+                ResetJoystick();
                 return;
             }
 
@@ -58,19 +67,36 @@ namespace Survivor2D.Input
 
                 if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
                 {
-                    MoveVector = Vector2.zero;
-                    activeFingerId = -1;
+                    ResetJoystick();
                     return;
                 }
 
                 var center = (Vector2)joystickArea.position;
-                var delta = (touch.position - center) / (joystickArea.rect.width * 0.5f);
-                MoveVector = delta.magnitude < deadZone ? Vector2.zero : Vector2.ClampMagnitude(delta, 1f);
+                var delta = (touch.position - center);
+                var normalizedDelta = delta / (joystickArea.rect.width * 0.5f);
+                
+                MoveVector = normalizedDelta.magnitude < deadZone ? Vector2.zero : Vector2.ClampMagnitude(normalizedDelta, 1f);
+                UpdateVisuals(MoveVector);
                 return;
             }
 
+            ResetJoystick();
+        }
+
+        private void ResetJoystick()
+        {
             MoveVector = Vector2.zero;
             activeFingerId = -1;
+            UpdateVisuals(Vector2.zero);
+        }
+
+        private void UpdateVisuals(Vector2 move)
+        {
+            if (handle != null)
+            {
+                handle.anchoredPosition = move * handleRange;
+            }
         }
     }
 }
+

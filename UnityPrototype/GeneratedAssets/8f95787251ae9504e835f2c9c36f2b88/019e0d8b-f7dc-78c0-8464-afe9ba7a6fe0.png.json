@@ -1,0 +1,38 @@
+{
+    "asset": "8f95787251ae9504e835f2c9c36f2b88",
+    "fileName": "019e0d8b-f7dc-78c0-8464-afe9ba7a6fe0.png",
+    "prompt": "2D pixel art sprite of a tiny gray mouse enemy. Small gray mouse with big round ears, pink nose, thin tail, tiny black eyes, and small angry eyebrows. Round compact body, wearing a tiny red scarf, holding a small cheese crumb. Sneaky running pose. Top-down 3/4 gameplay view for a mobile survival roguelike. 32x32 pixel art style aesthetic, clean readable silhouette, limited color palette, clear dark outline, high contrast, simple shape. Clearly distinct from the orange cat player character. Cute but hostile mischievous enemy, basic swarm enemy. Single full-body character, centered, transparent background, no background, no scenery. Game-ready Unity sprite. No text, no watermark.",
+    "negativePrompt": "",
+    "model": "gemini-3.1-flash",
+    "modelName": "Gemini 3.1 Nano Banana 2",
+    "customSeed": -1,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation",
+    "pixelateTargetSize": 0,
+    "pixelateKeepImageSize": false,
+    "pixelatePixelBlockSize": 0,
+    "pixelatePixelGridSize": 0,
+    "pixelateMode": 0,
+    "pixelateOutlineThickness": 0,
+    "doodles": {
+        "m_Items": [
+            {
+                "doodleReferenceType": 7,
+                "doodle": [],
+                "label": "Image",
+                "strength": 0.25,
+                "invertStrength": false,
+                "assetReferenceGuid": "cc0e786d3c698cd4cb8cffd0354b2861",
+                "unlabeledIndex": -1
+            }
+        ]
+    },
+    "upscaleFactor": 0,
+    "dimensions": {
+        "width": 1024,
+        "height": 1024
+    },
+    "spriteSheet": false,
+    "duration": 0.0
+}

@@ -12,6 +12,7 @@ using UnityEditor;
 using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 public static class MainSceneAutoBuilder
@@ -24,6 +25,7 @@ public static class MainSceneAutoBuilder
     {
         var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
 
+        // 1. Camera Setup
         var mainCamera = Camera.main;
         if (mainCamera == null)
         {
@@ -33,11 +35,19 @@ public static class MainSceneAutoBuilder
         }
 
         mainCamera.orthographic = true;
+        mainCamera.orthographicSize = 5f; 
+        mainCamera.clearFlags = CameraClearFlags.SolidColor;
+        mainCamera.backgroundColor = new Color(0.1f, 0.1f, 0.12f); 
         mainCamera.transform.position = new Vector3(0f, 0f, -10f);
+
+        RenderSettings.skybox = null;
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+        RenderSettings.ambientLight = Color.white;
 
         EnsureDirectionalLight();
         Directory.CreateDirectory(PrefabFolder);
 
+        // 2. Core Systems
         var gameRoot = GetOrCreate("GameRoot");
         var bootstrap = GetOrAdd<GameBootstrap>(gameRoot);
         var spawner = GetOrAdd<EnemySpawner>(gameRoot);
@@ -45,60 +55,169 @@ public static class MainSceneAutoBuilder
         var levelSystem = GetOrAdd<LevelSystem>(gameRoot);
         var projectilePool = GetOrAdd<ProjectilePool>(gameRoot);
 
-        var player = BuildPlayer(mainCamera);
-        var input = BuildInputUI(out var joystickArea, out var canvas, out var hud, out var levelUpPanel, out var gameOverPanel);
+        // 3. Clear existing objects to rebuild
+        string[] toDelete = { 
+            "Background", "PlayerInfoPanel", "HUD", "JoystickArea", "LevelUpPanel", 
+            "GameOverPanel", "HPBar", "EXPBar", "TimeText", "MainBackground", "Environment", 
+            "GreySquare", "Square", "Plane", "Cube", "World", "Obstacles"
+        };
+        var allGos = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var g in allGos)
+        {
+            if (g != null && System.Array.Exists(toDelete, name => g.name == name))
+            {
+                Object.DestroyImmediate(g);
+            }
+        }
+
+        // 4. Environment
+        BuildEnvironment();
+
+        // 5. Build Entities & UI
+        var player = BuildPlayer();
+        var weaponManager = GetOrAdd<Survivor2D.Combat.WeaponManager>(player);
+        var input = BuildUI(out var joystickArea, out var canvas, out var hud, out var levelUpPanel, out var gameOverPanel);
 
         var enemyPrefab = BuildEnemyPrefab();
         var projectilePrefab = BuildProjectilePrefab();
         var expOrbPrefab = BuildExpOrbPrefab();
 
-        enemyPrefab.GetComponent<EnemyController>().GetType();
-        SetRef(enemyPrefab.GetComponent<EnemyController>(), "expOrbPrefab", expOrbPrefab);
-
-        SetRef(levelSystem, "playerStats", player.GetComponent<PlayerStats>());
-        SetRef(spawner, "enemyPrefab", enemyPrefab.GetComponent<EnemyController>());
+        // 6. Wiring
+        SetRef(enemyPrefab.GetComponent<Survivor2D.Enemy.EnemyController>(), "expOrbPrefab", expOrbPrefab.GetComponent<Survivor2D.Progression.ExpOrb>());
+        SetRef(levelSystem, "playerStats", player.GetComponent<Survivor2D.Player.PlayerStats>());
+        SetRef(levelSystem, "weaponManager", weaponManager);
+        SetRef(spawner, "enemyPrefab", enemyPrefab.GetComponent<Survivor2D.Enemy.EnemyController>());
         SetRef(spawner, "player", player.transform);
         SetRef(spawner, "mainCamera", mainCamera);
         SetRef(spawner, "enemyRegistry", registry);
         SetRef(spawner, "levelSystem", levelSystem);
-
+        
         SetRef(projectilePool, "projectilePrefab", projectilePrefab.GetComponent<Projectile>());
 
-        var stats = player.GetComponent<PlayerStats>();
-        SetRef(player.GetComponent<PlayerMover>(), "playerStats", stats);
-        SetRef(player.GetComponent<PlayerMover>(), "input", input);
-        SetRef(player.GetComponent<PlayerMover>(), "mainCamera", mainCamera);
+        var stats = player.GetComponent<Survivor2D.Player.PlayerStats>();
+        
+        SetRef(player.GetComponent<Survivor2D.Player.PlayerMover>(), "playerStats", stats);
+        SetRef(player.GetComponent<Survivor2D.Player.PlayerMover>(), "input" , input);
+        SetRef(player.GetComponent<Survivor2D.Player.PlayerMover>(), "mainCamera", mainCamera);
 
-        SetRef(player.GetComponent<AutoAttacker>(), "playerStats", stats);
-        SetRef(player.GetComponent<AutoAttacker>(), "projectilePool", projectilePool);
-        SetRef(player.GetComponent<AutoAttacker>(), "firePoint", player.transform.Find("FirePoint"));
-        SetRef(player.GetComponent<AutoAttacker>(), "enemyRegistry", registry);
+        SetRef(weaponManager, "projectilePool", projectilePool);
+        SetRef(weaponManager, "enemyRegistry", registry);
+        SetRef(weaponManager, "firePoint", player.transform.Find("FirePoint"));
+        
+        var catClawVfx = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Weapons/Weapon_CatClaw_Visual.prefab");
+        var tunaBomb = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Weapons/Weapon_TunaCanBomb_Visual.prefab");
+        var explosionVfx = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Weapons/Weapon_Explosion_Visual.prefab");
+        SetRef(weaponManager, "catClawVfxPrefab", catClawVfx);
+        SetRef(weaponManager, "tunaCanBombPrefab", tunaBomb);
+        SetRef(weaponManager, "explosionVfxPrefab", explosionVfx); 
 
-        SetRef(player.GetComponent<LevelSystemLink>(), "levelSystem", levelSystem);
+        SetRef(player.GetComponent<Survivor2D.Progression.LevelSystemLink>(), "levelSystem", levelSystem);
 
         SetRef(bootstrap, "playerStats", stats);
         SetRef(bootstrap, "levelSystem", levelSystem);
         SetRef(bootstrap, "levelUpPanel", levelUpPanel);
+        SetRef(bootstrap, "weaponManager", weaponManager);
 
         SetRef(levelUpPanel, "root", levelUpPanel.gameObject);
         SetRef(levelUpPanel, "levelSystem", levelSystem);
+        SetRef(levelUpPanel, "weaponManager", weaponManager);
         SetRef(gameOverPanel, "root", gameOverPanel.gameObject);
 
-        SetRef(hud, "hpSlider", canvas.transform.Find("HUD/HPBar").GetComponent<Slider>());
-        SetRef(hud, "expSlider", canvas.transform.Find("HUD/EXPBar").GetComponent<Slider>());
-        SetRef(hud, "levelText", canvas.transform.Find("HUD/LevelText").GetComponent<TMP_Text>());
-        SetRef(hud, "timeText", canvas.transform.Find("HUD/TimeText").GetComponent<TMP_Text>());
+        // UI Wiring
+        SetRef(hud, "hpSlider", canvas.transform.Find("HPBar").GetComponent<Slider>());
+        SetRef(hud, "expSlider", canvas.transform.Find("EXPBar").GetComponent<Slider>());
+        SetRef(hud, "levelText", hud.transform.Find("LevelText").GetComponent<TMP_Text>());
+        SetRef(hud, "timeText", canvas.transform.Find("TimeText").GetComponent<TMP_Text>());
+        SetRef(hud, "statsText", hud.transform.Find("StatsText").GetComponent<TMP_Text>());
+        SetRef(hud, "weaponListText", hud.transform.Find("WeaponListText").GetComponent<TMP_Text>());
 
         SetRef(input, "joystickArea", joystickArea);
 
-        BindLevelUpButtons(levelUpPanel, canvas.transform.Find("LevelUpPanel"));
-        BindRestartButton(gameOverPanel, canvas.transform.Find("GameOverPanel"));
+        BindLevelUpButtons(levelUpPanel, levelUpPanel.transform);
+        BindRestartButton(gameOverPanel, gameOverPanel.transform);
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();
 
-        Debug.Log("MainScene 자동 구성이 완료되었습니다.");
+        Debug.Log("Survivor2D: Rebuilt with Weapon Level-up System.");
+        }
+
+        private static void BindLevelUpButtons(LevelUpPanel panel, Transform root)
+        {
+        var names = new[] { "Choice0Button", "Choice1Button", "Choice2Button" };
+        var methods = new UnityAction[] { panel.SelectChoice0, panel.SelectChoice1, panel.SelectChoice2 };
+        var buttons = new Button[names.Length];
+        for (int i = 0; i < names.Length; i++) {
+            var btnTr = root.Find(names[i]);
+            if (btnTr != null) {
+                var btn = btnTr.GetComponent<Button>();
+                buttons[i] = btn;
+                btn.onClick.RemoveAllListeners();
+                UnityEventTools.AddPersistentListener(btn.onClick, methods[i]);
+            }
+        }
+        SetRefArray(panel, "choiceButtons", buttons);
+        }
+
+        private static void SetRefArray(Object target, string fieldName, Object[] values)
+        {
+        if (target == null) return;
+        var so = new SerializedObject(target);
+        var prop = so.FindProperty(fieldName);
+        if (prop == null || !prop.isArray) return;
+        prop.arraySize = values.Length;
+        for (int i = 0; i < values.Length; i++)
+        {
+            prop.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+        }
+        so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void BuildEnvironment()
+    {
+        var world = new GameObject("World");
+        
+        // Tiled Background
+        var bg = new GameObject("MainBackground");
+        bg.transform.SetParent(world.transform);
+        var sr = bg.AddComponent<SpriteRenderer>();
+        sr.sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/Environment/Street_Tile.png");
+        sr.drawMode = SpriteDrawMode.Tiled;
+        sr.size = new Vector2(100f, 100f);
+        sr.sortingOrder = 0;
+        sr.color = new Color(0.7f, 0.7f, 0.7f);
+        bg.transform.position = Vector3.zero;
+
+        var obs = new GameObject("Obstacles");
+        obs.transform.SetParent(world.transform);
+
+        // Props with Colliders
+        PlaceProp(obs.transform, "Assets/Sprites/Environment/Utility_Pole.png", new Vector2(-4, 4), 0.1f, true);
+        PlaceProp(obs.transform, "Assets/Sprites/Environment/Utility_Pole.png", new Vector2(4, -4), 0.1f, true);
+        PlaceProp(obs.transform, "Assets/Sprites/Environment/Trash_Can.png", new Vector2(-2, -5), 0.07f, false);
+        PlaceProp(obs.transform, "Assets/Sprites/Environment/Trash_Can.png", new Vector2(5, 2), 0.07f, false);
+        PlaceProp(obs.transform, "Assets/Sprites/Environment/Street_Sign.png", new Vector2(1, 5), 0.08f, false);
+        PlaceProp(obs.transform, "Assets/Sprites/Environment/Street_Sign.png", new Vector2(-5, -2), 0.08f, false);
+        PlaceProp(obs.transform, "Assets/Sprites/Environment/Vending_Machine.png", new Vector2(3, 6), 0.12f, true);
+        PlaceProp(obs.transform, "Assets/Sprites/Environment/Planter.png", new Vector2(-4, -4), 0.08f, true);
+        PlaceProp(obs.transform, "Assets/Sprites/Environment/Stacked_Boxes.png", new Vector2(5, -5), 0.1f, true);
+        PlaceProp(obs.transform, "Assets/Sprites/Environment/Street_Fence.png", new Vector2(0, 8), 0.12f, true);
+        PlaceProp(obs.transform, "Assets/Sprites/Environment/Street_Fence.png", new Vector2(4, 8), 0.12f, true);
+        PlaceProp(obs.transform, "Assets/Sprites/Environment/Street_Fence.png", new Vector2(-4, 8), 0.12f, true);
+    }
+
+    private static void PlaceProp(Transform parent, string path, Vector2 pos, float scale, bool useBox)
+    {
+        var go = new GameObject(Path.GetFileNameWithoutExtension(path));
+        go.transform.SetParent(parent);
+        go.transform.position = pos;
+        go.transform.localScale = Vector3.one * scale;
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        sr.sortingOrder = 5;
+        if (useBox) go.AddComponent<BoxCollider2D>();
+        else go.AddComponent<CircleCollider2D>();
     }
 
     private static void EnsureDirectionalLight()
@@ -110,18 +229,20 @@ public static class MainSceneAutoBuilder
         light.type = LightType.Directional;
     }
 
-    private static GameObject BuildPlayer(Camera mainCamera)
+    private static GameObject BuildPlayer()
     {
         var player = GetOrCreate("Player");
-        if (player.GetComponent<SpriteRenderer>() == null)
-            player.AddComponent<SpriteRenderer>().sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+        var sr = GetOrAdd<SpriteRenderer>(player);
+        sr.sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/Characters/CatHero_Concept.png");
+        sr.color = Color.white;
+        sr.sortingOrder = 10;
+        player.transform.localScale = Vector3.one * 0.07f; 
+        
         var rb = GetOrAdd<Rigidbody2D>(player);
-        rb.gravityScale = 0f;
-        rb.freezeRotation = true;
+        rb.gravityScale = 0f; rb.freezeRotation = true;
         GetOrAdd<CircleCollider2D>(player);
         GetOrAdd<PlayerStats>(player);
         GetOrAdd<PlayerMover>(player);
-        GetOrAdd<AutoAttacker>(player);
         GetOrAdd<LevelSystemLink>(player);
 
         var firePoint = player.transform.Find("FirePoint");
@@ -136,12 +257,17 @@ public static class MainSceneAutoBuilder
         return player;
     }
 
-    private static TouchJoystickInput BuildInputUI(out RectTransform joystickArea, out Canvas canvas, out HudController hudController, out LevelUpPanel levelUpPanel, out GameOverPanel gameOverPanel)
+    private static TouchJoystickInput BuildUI(out RectTransform joystickArea, out Canvas canvas, out HudController hudController, out LevelUpPanel levelUpPanel, out GameOverPanel gameOverPanel)
     {
         var canvasGo = GetOrCreate("Canvas");
         canvas = GetOrAdd<Canvas>(canvasGo);
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        GetOrAdd<CanvasScaler>(canvasGo).uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        canvas.sortingOrder = 100;
+        var scaler = GetOrAdd<CanvasScaler>(canvasGo);
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1080, 1920);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
         GetOrAdd<GraphicRaycaster>(canvasGo);
 
         if (Object.FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
@@ -151,56 +277,75 @@ public static class MainSceneAutoBuilder
             es.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
         }
 
-        var hud = GetOrCreate("HUD", canvasGo.transform);
-        var hpBar = CreateSlider("HPBar", hud.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -30f));
-        var expBar = CreateSlider("EXPBar", hud.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -60f));
-        var levelText = CreateTmpText("LevelText", hud.transform, "Lv 1", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -10f));
-        var timeText = CreateTmpText("TimeText", hud.transform, "Time 0.0s", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-10f, -10f), TextAlignmentOptions.TopRight);
+        // HUD
+        var hudGo = GetOrCreate("HUD", canvasGo.transform);
+        var hudRt = hudGo.GetComponent<RectTransform>();
+        hudRt.anchorMin = new Vector2(0, 1); hudRt.anchorMax = new Vector2(0, 1);
+        hudRt.pivot = new Vector2(0, 1); hudRt.anchoredPosition = new Vector2(40, -40);
+        hudRt.sizeDelta = new Vector2(400, 300);
+        var hudImg = hudGo.GetComponent<Image>();
+        if (hudImg != null) Object.DestroyImmediate(hudImg);
 
+        CreateTmpText("LevelText", hudGo.transform, "Lv 1", new Vector2(0, 1), new Vector2(0, 1), Vector2.zero).fontSize = 28;
+        CreateTmpText("StatsText", hudGo.transform, "ATK/ASPD/MSPD", new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, -40)).fontSize = 22;
+        CreateTmpText("WeaponListText", hudGo.transform, "", new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, -120)).fontSize = 20;
+
+        // HP/EXP Bars
+        var hpBar = CreateSlider("HPBar", canvasGo.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(40, -300));
+        hpBar.GetComponent<RectTransform>().sizeDelta = new Vector2(250, 16);
+        hpBar.fillRect.GetComponent<Image>().color = Color.red;
+        if (hpBar.GetComponent<Image>() != null) hpBar.GetComponent<Image>().enabled = false;
+
+        var expBar = CreateSlider("EXPBar", canvasGo.transform, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 20));
+        expBar.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 20); 
+        expBar.fillRect.GetComponent<Image>().color = new Color(0.2f, 0.6f, 1f); 
+        if (expBar.GetComponent<Image>() != null) expBar.GetComponent<Image>().enabled = false;
+
+        // Time
+        var timeText = CreateTmpText("TimeText", canvasGo.transform, "00:00", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -60), TextAlignmentOptions.Center);
+        timeText.fontSize = 32;
+
+        // Joystick Area
         var joystick = GetOrCreate("JoystickArea", canvasGo.transform);
         joystickArea = joystick.GetComponent<RectTransform>();
-        joystickArea.anchorMin = new Vector2(0f, 0f);
-        joystickArea.anchorMax = new Vector2(0f, 0f);
-        joystickArea.sizeDelta = new Vector2(220f, 220f);
-        joystickArea.anchoredPosition = new Vector2(130f, 130f);
-        var joyImage = GetOrAdd<Image>(joystick);
-        joyImage.color = new Color(1f, 1f, 1f, 0.15f);
+        joystickArea.anchorMin = Vector2.zero; joystickArea.anchorMax = Vector2.one;
+        joystickArea.offsetMin = Vector2.zero; joystickArea.offsetMax = Vector2.zero;
+        var joyImg = GetOrAdd<Image>(joystick);
+        joyImg.color = new Color(0, 0, 0, 0); 
+        joyImg.raycastTarget = true;
 
+        // Panels
         var levelPanelGo = GetOrCreate("LevelUpPanel", canvasGo.transform);
-        levelPanelGo.SetActive(false);
-        var levelPanelImage = GetOrAdd<Image>(levelPanelGo);
-        levelPanelImage.color = new Color(0f, 0f, 0f, 0.75f);
-        var levelRect = levelPanelGo.GetComponent<RectTransform>();
-        levelRect.anchorMin = Vector2.zero; levelRect.anchorMax = Vector2.one; levelRect.offsetMin = Vector2.zero; levelRect.offsetMax = Vector2.zero;
-        CreateButton("AttackDamageButton", levelPanelGo.transform, "ATK +", new Vector2(0f, 60f));
-        CreateButton("AttackSpeedButton", levelPanelGo.transform, "ASPD +", new Vector2(0f, 0f));
-        CreateButton("MoveSpeedButton", levelPanelGo.transform, "MSPD +", new Vector2(0f, -60f));
+        GetOrAdd<Image>(levelPanelGo).color = new Color(0, 0, 0, 0.8f);
+        var levelRt = levelPanelGo.GetComponent<RectTransform>();
+        levelRt.anchorMin = Vector2.zero; levelRt.anchorMax = Vector2.one; levelRt.offsetMin = Vector2.zero; levelRt.offsetMax = Vector2.zero;
+        CreateTmpText("Title", levelPanelGo.transform, "LEVEL UP", new Vector2(0.5f, 0.85f), new Vector2(0.5f, 0.85f), Vector2.zero, TextAlignmentOptions.Center).fontSize = 60;
+        CreateButton("Choice0Button", levelPanelGo.transform, "Choice 0", new Vector2(0, 100));
+        CreateButton("Choice1Button", levelPanelGo.transform, "Choice 1", new Vector2(0, -50));
+        CreateButton("Choice2Button", levelPanelGo.transform, "Choice 2", new Vector2(0, -200));
 
         var gameOverGo = GetOrCreate("GameOverPanel", canvasGo.transform);
-        gameOverGo.SetActive(false);
-        var gameOverImage = GetOrAdd<Image>(gameOverGo);
-        gameOverImage.color = new Color(0f, 0f, 0f, 0.75f);
-        var gameOverRect = gameOverGo.GetComponent<RectTransform>();
-        gameOverRect.anchorMin = Vector2.zero; gameOverRect.anchorMax = Vector2.one; gameOverRect.offsetMin = Vector2.zero; gameOverRect.offsetMax = Vector2.zero;
-        CreateTmpText("GameOverText", gameOverGo.transform, "Game Over", new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.6f), Vector2.zero, TextAlignmentOptions.Center);
-        CreateButton("RestartButton", gameOverGo.transform, "Restart", new Vector2(0f, -20f));
+        GetOrAdd<Image>(gameOverGo).color = new Color(0, 0, 0, 0.9f);
+        var gameOverRt = gameOverGo.GetComponent<RectTransform>();
+        gameOverRt.anchorMin = Vector2.zero; gameOverRt.anchorMax = Vector2.one; gameOverRt.offsetMin = Vector2.zero; gameOverRt.offsetMax = Vector2.zero;
+        CreateTmpText("GameOverText", gameOverGo.transform, "GAME OVER", new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.6f), Vector2.zero, TextAlignmentOptions.Center).fontSize = 80;
+        CreateButton("RestartButton", gameOverGo.transform, "RETRY", new Vector2(0, -50));
 
-        hudController = GetOrAdd<HudController>(hud);
+        hudController = GetOrAdd<HudController>(hudGo);
         levelUpPanel = GetOrAdd<LevelUpPanel>(levelPanelGo);
         gameOverPanel = GetOrAdd<GameOverPanel>(gameOverGo);
 
-        var input = GetOrAdd<TouchJoystickInput>(canvasGo);
-        return input;
-    }
+        return GetOrAdd<TouchJoystickInput>(canvasGo);
+        }
 
     private static GameObject BuildEnemyPrefab()
     {
         var path = PrefabFolder + "/Enemy.prefab";
-        var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-        if (existing != null) return existing;
-
         var go = new GameObject("Enemy");
-        go.AddComponent<SpriteRenderer>().sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/Enemies/MouseEnemy_Concept.png");
+        sr.sortingOrder = 5;
+        go.transform.localScale = Vector3.one * 0.07f; 
         var rb = go.AddComponent<Rigidbody2D>(); rb.gravityScale = 0f; rb.freezeRotation = true;
         go.AddComponent<CircleCollider2D>();
         go.AddComponent<EnemyController>();
@@ -212,12 +357,11 @@ public static class MainSceneAutoBuilder
     private static GameObject BuildProjectilePrefab()
     {
         var path = PrefabFolder + "/Projectile.prefab";
-        var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-        if (existing != null) return existing;
-
         var go = new GameObject("Projectile");
-        go.transform.localScale = Vector3.one * 0.25f;
-        go.AddComponent<SpriteRenderer>().sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/Projectiles/FishBone_Projectile.png");
+        sr.sortingOrder = 8;
+        go.transform.localScale = Vector3.one * 0.04f; 
         var collider = go.AddComponent<CircleCollider2D>();
         collider.isTrigger = true;
         go.AddComponent<Projectile>();
@@ -229,12 +373,12 @@ public static class MainSceneAutoBuilder
     private static GameObject BuildExpOrbPrefab()
     {
         var path = PrefabFolder + "/ExpOrb.prefab";
-        var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-        if (existing != null) return existing;
-
         var go = new GameObject("ExpOrb");
-        go.transform.localScale = Vector3.one * 0.3f;
-        go.AddComponent<SpriteRenderer>().sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+        sr.color = new Color(0.2f, 0.8f, 1f); 
+        sr.sortingOrder = 5;
+        go.transform.localScale = Vector3.one * 1.5f; 
         var collider = go.AddComponent<CircleCollider2D>();
         collider.isTrigger = true;
         go.AddComponent<ExpOrb>();
@@ -243,48 +387,33 @@ public static class MainSceneAutoBuilder
         return prefab;
     }
 
-    private static void BindLevelUpButtons(LevelUpPanel panel, Transform root)
-    {
-        var atkBtn = root.Find("AttackDamageButton").GetComponent<Button>();
-        var aspdBtn = root.Find("AttackSpeedButton").GetComponent<Button>();
-        var mspdBtn = root.Find("MoveSpeedButton").GetComponent<Button>();
-        atkBtn.onClick.RemoveAllListeners();
-        aspdBtn.onClick.RemoveAllListeners();
-        mspdBtn.onClick.RemoveAllListeners();
-        UnityEventTools.AddPersistentListener(atkBtn.onClick, panel.SelectAttackDamage);
-        UnityEventTools.AddPersistentListener(aspdBtn.onClick, panel.SelectAttackSpeed);
-        UnityEventTools.AddPersistentListener(mspdBtn.onClick, panel.SelectMoveSpeed);
-    }
-
     private static void BindRestartButton(GameOverPanel panel, Transform root)
     {
-        var btn = root.Find("RestartButton").GetComponent<Button>();
-        btn.onClick.RemoveAllListeners();
-        UnityEventTools.AddPersistentListener(btn.onClick, panel.Restart);
+        var btnTr = root.Find("RestartButton");
+        if (btnTr != null) {
+            var btn = btnTr.GetComponent<Button>();
+            btn.onClick.RemoveAllListeners();
+            UnityEventTools.AddPersistentListener(btn.onClick, panel.Restart);
+        }
     }
 
     private static Slider CreateSlider(string name, Transform parent, Vector2 minAnchor, Vector2 maxAnchor, Vector2 anchoredPos)
     {
         var go = GetOrCreate(name, parent);
         var rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = minAnchor; rect.anchorMax = maxAnchor; rect.sizeDelta = new Vector2(300f, 20f); rect.anchoredPosition = anchoredPos;
-        var image = GetOrAdd<Image>(go);
-        image.color = Color.gray;
+        rect.anchorMin = minAnchor; rect.anchorMax = maxAnchor;
+        rect.anchoredPosition = anchoredPos;
         var slider = GetOrAdd<Slider>(go);
-        slider.targetGraphic = image;
-
+        slider.interactable = false;
+        slider.transition = Selectable.Transition.None;
         var fillArea = GetOrCreate("Fill Area", go.transform);
         var fillRect = fillArea.GetComponent<RectTransform>();
-        fillRect.anchorMin = Vector2.zero; fillRect.anchorMax = Vector2.one; fillRect.offsetMin = new Vector2(5f, 5f); fillRect.offsetMax = new Vector2(-5f, -5f);
+        fillRect.anchorMin = Vector2.zero; fillRect.anchorMax = Vector2.one; fillRect.offsetMin = Vector2.zero; fillRect.offsetMax = Vector2.zero;
         var fill = GetOrCreate("Fill", fillArea.transform);
         var fillImage = GetOrAdd<Image>(fill);
         fillImage.color = Color.green;
         slider.fillRect = fill.GetComponent<RectTransform>();
         slider.handleRect = null;
-        slider.direction = Slider.Direction.LeftToRight;
-        slider.minValue = 0;
-        slider.maxValue = 100;
-        slider.value = 100;
         return slider;
     }
 
@@ -292,11 +421,11 @@ public static class MainSceneAutoBuilder
     {
         var go = GetOrCreate(name, parent);
         var tmp = GetOrAdd<TextMeshProUGUI>(go);
-        tmp.text = text;
-        tmp.fontSize = 28;
-        tmp.alignment = align;
+        tmp.text = text; tmp.fontSize = 28; tmp.alignment = align; tmp.color = Color.white;
         var rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = minAnchor; rect.anchorMax = maxAnchor; rect.sizeDelta = new Vector2(300f, 50f); rect.anchoredPosition = anchoredPos;
+        rect.anchorMin = minAnchor; rect.anchorMax = maxAnchor;
+        rect.sizeDelta = new Vector2(600f, 100f);
+        rect.anchoredPosition = anchoredPos;
         return tmp;
     }
 
@@ -305,17 +434,14 @@ public static class MainSceneAutoBuilder
         var go = GetOrCreate(name, parent);
         var rect = go.GetComponent<RectTransform>();
         rect.anchorMin = new Vector2(0.5f, 0.5f); rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = new Vector2(260f, 45f); rect.anchoredPosition = anchoredPos;
+        rect.sizeDelta = new Vector2(300f, 80f); rect.anchoredPosition = anchoredPos;
         var image = GetOrAdd<Image>(go);
-        image.color = new Color(1f, 1f, 1f, 0.9f);
+        image.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
         var btn = GetOrAdd<Button>(go);
-
-        var txt = GetOrCreate("Text", go.transform);
-        var tmp = GetOrAdd<TextMeshProUGUI>(txt);
-        tmp.text = label;
-        tmp.alignment = TextAlignmentOptions.Center;
-        tmp.fontSize = 24;
-        var txtRect = txt.GetComponent<RectTransform>();
+        var txtGo = GetOrCreate("Text", go.transform);
+        var tmp = GetOrAdd<TextMeshProUGUI>(txtGo);
+        tmp.text = label; tmp.alignment = TextAlignmentOptions.Center; tmp.fontSize = 32; tmp.color = Color.white;
+        var txtRect = txtGo.GetComponent<RectTransform>();
         txtRect.anchorMin = Vector2.zero; txtRect.anchorMax = Vector2.one; txtRect.offsetMin = Vector2.zero; txtRect.offsetMax = Vector2.zero;
         return btn;
     }
@@ -326,18 +452,20 @@ public static class MainSceneAutoBuilder
         if (found != null) return found.gameObject;
         var go = new GameObject(name);
         if (parent != null) go.transform.SetParent(parent, false);
-        if (parent != null) go.AddComponent<RectTransform>();
+        if (parent != null || name == "Canvas") go.AddComponent<RectTransform>();
         return go;
     }
 
     private static T GetOrAdd<T>(GameObject go) where T : Component
     {
+        if (go == null) return null;
         var component = go.GetComponent<T>();
         return component != null ? component : go.AddComponent<T>();
     }
 
     private static void SetRef(Object target, string fieldName, Object value)
     {
+        if (target == null || value == null) return;
         var so = new SerializedObject(target);
         var prop = so.FindProperty(fieldName);
         if (prop == null) return;

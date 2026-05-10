@@ -1,0 +1,12 @@
+{
+    "asset": "0e2e741d8f806c14ca9d9be989e44e78",
+    "fileName": "019e0ef5-de9f-712c-88b7-455029727b3b_Preview.png",
+    "prompt": "pixel art street pavement texture, top-down view, simple asphalt with some cracks, muted grey colors, 2D game background, tileable",
+    "negativePrompt": "",
+    "model": "gemini-3.1-flash-texture",
+    "modelName": "Gemini 3.1 Nano Banana 2",
+    "customSeed": 1634145741,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation"
+}

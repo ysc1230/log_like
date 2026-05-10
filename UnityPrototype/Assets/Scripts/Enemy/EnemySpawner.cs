@@ -9,9 +9,9 @@ namespace Survivor2D.Enemy
         [SerializeField] private Camera mainCamera;
         [SerializeField] private EnemyRegistry enemyRegistry;
         [SerializeField] private Survivor2D.Progression.LevelSystem levelSystem;
-        [SerializeField] private float startSpawnInterval = 2f;
-        [SerializeField] private float minSpawnInterval = 0.5f;
-        [SerializeField] private float intervalReducePerSecond = 0.01f;
+        [SerializeField] private float startSpawnInterval = 0.25f;
+        [SerializeField] private float minSpawnInterval = 0.0625f;
+        [SerializeField] private float intervalReducePerSecond = 0.08f;
 
         private float timer;
         private float elapsed;

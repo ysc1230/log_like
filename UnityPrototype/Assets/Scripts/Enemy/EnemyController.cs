@@ -14,8 +14,14 @@ namespace Survivor2D.Enemy
         private Transform target;
         private EnemyRegistry registry;
         private LevelSystem levelSystem;
+        private SpriteRenderer spriteRenderer;
         private float runtimeSpeed;
         private int currentHealth;
+
+        private void Awake()
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+        }
 
         public void Initialize(Transform playerTarget, float speedMultiplier, EnemyRegistry enemyRegistry, LevelSystem targetLevelSystem)
         {
@@ -33,6 +39,11 @@ namespace Survivor2D.Enemy
             if (target == null) return;
             var dir = (target.position - transform.position).normalized;
             transform.position += dir * (runtimeSpeed * Time.deltaTime);
+
+            if (spriteRenderer != null && dir.x != 0)
+            {
+                spriteRenderer.flipX = dir.x < 0;
+            }
         }
 
         public void ApplyDamage(int amount)

@@ -1,0 +1,38 @@
+{
+    "asset": "5c59495bb005e5a4398d0fa7499e352e",
+    "fileName": "019e0d8a-22b3-7208-8f38-5c286b4137e3.png",
+    "prompt": "2D pixel art sprite of a small sharp fish bone projectile. White fish bone with a slightly sharp tip, simple readable shape. Horizontal orientation, flying horizontally. Top-down gameplay view for a mobile survival roguelike. 16x16 pixel art style aesthetic, clean readable silhouette, limited color palette, clear dark outline, high contrast. Single projectile only, centered, transparent background, no background, no scenery. Matches the pixel art style of the orange cat hero. Game-ready Unity sprite. No text, no watermark.",
+    "negativePrompt": "",
+    "model": "gemini-3.1-flash",
+    "modelName": "Gemini 3.1 Nano Banana 2",
+    "customSeed": -1,
+    "w3CTraceId": "",
+    "feedback": 0,
+    "refinementMode": "Generation",
+    "pixelateTargetSize": 0,
+    "pixelateKeepImageSize": false,
+    "pixelatePixelBlockSize": 0,
+    "pixelatePixelGridSize": 0,
+    "pixelateMode": 0,
+    "pixelateOutlineThickness": 0,
+    "doodles": {
+        "m_Items": [
+            {
+                "doodleReferenceType": 7,
+                "doodle": [],
+                "label": "Image",
+                "strength": 0.25,
+                "invertStrength": false,
+                "assetReferenceGuid": "cc0e786d3c698cd4cb8cffd0354b2861",
+                "unlabeledIndex": -1
+            }
+        ]
+    },
+    "upscaleFactor": 0,
+    "dimensions": {
+        "width": 1024,
+        "height": 1024
+    },
+    "spriteSheet": false,
+    "duration": 0.0
+}

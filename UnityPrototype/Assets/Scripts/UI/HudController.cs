@@ -11,6 +11,8 @@ namespace Survivor2D.UI
         [SerializeField] private Slider expSlider;
         [SerializeField] private TMP_Text levelText;
         [SerializeField] private TMP_Text timeText;
+        [SerializeField] private TMP_Text statsText;
+        [SerializeField] private TMP_Text weaponListText;
 
         private float elapsed;
 
@@ -19,6 +21,8 @@ namespace Survivor2D.UI
             GameEvents.OnHealthChanged += HandleHealthChanged;
             GameEvents.OnExpChanged += HandleExpChanged;
             GameEvents.OnLevelChanged += HandleLevelChanged;
+            GameEvents.OnStatsChanged += HandleStatsChanged;
+            GameEvents.OnWeaponsChanged += HandleWeaponsChanged;
         }
 
         private void OnDisable()
@@ -26,6 +30,8 @@ namespace Survivor2D.UI
             GameEvents.OnHealthChanged -= HandleHealthChanged;
             GameEvents.OnExpChanged -= HandleExpChanged;
             GameEvents.OnLevelChanged -= HandleLevelChanged;
+            GameEvents.OnStatsChanged -= HandleStatsChanged;
+            GameEvents.OnWeaponsChanged -= HandleWeaponsChanged;
         }
 
         private void Update()
@@ -49,5 +55,21 @@ namespace Survivor2D.UI
         }
 
         private void HandleLevelChanged(int level) => levelText.text = $"Lv {level}";
-    }
-}
+
+        private void HandleStatsChanged(int atk, float aspd, float mspd)
+        {
+            statsText.text = $"ATK: {atk}\nASPD: {1f/aspd:0.0}/s\nMSPD: {mspd:0.0}";
+        }
+
+        private void HandleWeaponsChanged(System.Collections.Generic.List<Survivor2D.Combat.WeaponStatus> weapons)
+        {
+            if (weaponListText == null) return;
+            string text = "";
+            foreach (var w in weapons)
+            {
+                text += $"{w.Name} Lv {w.Level}\n";
+            }
+            weaponListText.text = text;
+        }
+        }
+        }

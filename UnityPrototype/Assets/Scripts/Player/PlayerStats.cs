@@ -21,6 +21,7 @@ namespace Survivor2D.Player
         {
             CurrentHealth = maxHealth;
             GameEvents.RaiseHealthChanged(CurrentHealth, maxHealth);
+            GameEvents.RaiseStatsChanged(attackDamage, attackCooldown, moveSpeed);
         }
 
         public void TakeDamage(int amount)
@@ -31,8 +32,22 @@ namespace Survivor2D.Player
             if (CurrentHealth == 0) GameEvents.RaiseGameOver();
         }
 
-        public void AddMoveSpeed(float value) => moveSpeed += value;
-        public void AddAttackDamage(int value) => attackDamage += value;
-        public void AddAttackRateMultiplier(float multiplier) => attackCooldown = Mathf.Max(0.1f, attackCooldown * multiplier);
+        public void AddMoveSpeed(float value) 
+        { 
+            moveSpeed += value; 
+            GameEvents.RaiseStatsChanged(attackDamage, attackCooldown, moveSpeed);
+        }
+        
+        public void AddAttackDamage(int value) 
+        { 
+            attackDamage += value; 
+            GameEvents.RaiseStatsChanged(attackDamage, attackCooldown, moveSpeed);
+        }
+        
+        public void AddAttackRateMultiplier(float multiplier) 
+        { 
+            attackCooldown = Mathf.Max(0.1f, attackCooldown * multiplier);
+            GameEvents.RaiseStatsChanged(attackDamage, attackCooldown, moveSpeed);
+        }
     }
 }

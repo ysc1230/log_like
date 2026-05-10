@@ -1,4 +1,5 @@
 using Survivor2D.Input;
+using Survivor2D.CameraControl;
 using UnityEngine;
 
 namespace Survivor2D.Player
@@ -11,29 +12,39 @@ namespace Survivor2D.Player
         [SerializeField] private Camera mainCamera;
 
         private Rigidbody2D rb;
+        private SpriteRenderer spriteRenderer;
         private Vector2 moveInput;
 
-        private void Awake() => rb = GetComponent<Rigidbody2D>();
+        private void Awake()
+        {
+            rb = GetComponent<Rigidbody2D>();
+            spriteRenderer = GetComponent<SpriteRenderer>();
 
-        private void Update() => moveInput = input != null ? input.MoveVector : Vector2.zero;
+            if (mainCamera != null)
+            {
+                var follow = mainCamera.GetComponent<CameraFollow>();
+                if (follow != null)
+                {
+                    follow.SetTarget(transform);
+                }
+            }
+        }
+
+        private void Update()
+        {
+            moveInput = input != null ? input.MoveVector : Vector2.zero;
+            
+            if (spriteRenderer != null && moveInput.x != 0)
+            {
+                spriteRenderer.flipX = moveInput.x < 0;
+            }
+        }
 
         private void FixedUpdate()
         {
             var speed = playerStats != null ? playerStats.MoveSpeed : 0f;
-            rb.velocity = moveInput * speed;
-            ClampToScreen();
-        }
-
-        private void ClampToScreen()
-        {
-            if (mainCamera == null) return;
-            var pos = transform.position;
-            var min = mainCamera.ViewportToWorldPoint(new Vector3(0f, 0f, 0f));
-            var max = mainCamera.ViewportToWorldPoint(new Vector3(1f, 1f, 0f));
-
-            pos.x = Mathf.Clamp(pos.x, min.x + 0.3f, max.x - 0.3f);
-            pos.y = Mathf.Clamp(pos.y, min.y + 0.3f, max.y - 0.3f);
-            transform.position = pos;
+            rb.linearVelocity = moveInput * speed;
         }
     }
 }
+
